@@ -1,3 +1,58 @@
+const stateToFIPS = {
+  "Alabama": "01",
+  "Alaska": "02",
+  "Arizona": "04",
+  "Arkansas": "05",
+  "California": "06",
+  "Colorado": "08",
+  "Connecticut": "09",
+  "Delaware": "10",
+  "District of Columbia": "11",
+  "Florida": "12",
+  "Georgia": "13",
+  "Hawaii": "15",
+  "Idaho": "16",
+  "Illinois": "17",
+  "Indiana": "18",
+  "Iowa": "19",
+  "Kansas": "20",
+  "Kentucky": "21",
+  "Louisiana": "22",
+  "Maine": "23",
+  "Maryland": "24",
+  "Massachusetts": "25",
+  "Michigan": "26",
+  "Minnesota": "27",
+  "Mississippi": "28",
+  "Missouri": "29",
+  "Montana": "30",
+  "Nebraska": "31",
+  "Nevada": "32",
+  "New Hampshire": "33",
+  "New Jersey": "34",
+  "New Mexico": "35",
+  "New York": "36",
+  "North Carolina": "37",
+  "North Dakota": "38",
+  "Ohio": "39",
+  "Oklahoma": "40",
+  "Oregon": "41",
+  "Pennsylvania": "42",
+  "Rhode Island": "44",
+  "South Carolina": "45",
+  "South Dakota": "46",
+  "Tennessee": "47",
+  "Texas": "48",
+  "Utah": "49",
+  "Vermont": "50",
+  "Virginia": "51",
+  "Washington": "53",
+  "West Virginia": "54",
+  "Wisconsin": "55",
+  "Wyoming": "56"
+};
+
+
 let map = L.map('map').setView([37.8, -96], 4);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -9,17 +64,29 @@ let activeFactor = null;
 let geoLayer;
 
 // ---------- Load CSV ----------
-Papa.parse("data.csv", {
+PPapa.parse("data.csv", {
   header: true,
   download: true,
   complete: function(results) {
+
     results.data.forEach(row => {
-      let countyKey = `${row.County} County, ${row.State}`;
-      countyData[countyKey] = row;
+      let stateFIPS = stateToFIPS[row.State];
+      if (!stateFIPS) return;
+
+      // county names sometimes come without "County"
+      let countyName = row.County.replace(" County", "").trim();
+
+      // your counties.geojson uses numeric COUNTY FIPS
+      // but you do not have county FIPS in CSV
+      // so for now we store by NAME for matching later
+      let key = `${stateFIPS}-${countyName.toLowerCase()}`;
+      countyData[key] = row;
     });
+
     buildFactorList(results.data);
   }
 });
+
 
 // ---------- Build factor list ----------
 function buildFactorList(data) {
@@ -56,7 +123,11 @@ fetch("counties.geojson")
 
 // ---------- Styling ----------
 function styleFeature(feature) {
-  let key = `${feature.properties.NAME} County, ${feature.properties.STATE}`;
+
+  let stateFIPS = feature.properties.STATE; // e.g. "01"
+  let countyName = feature.properties.NAME.toLowerCase(); // e.g. "autauga"
+
+  let key = `${stateFIPS}-${countyName}`;
   let row = countyData[key];
 
   if (!row || !activeFactor) {
@@ -83,8 +154,11 @@ function styleFeature(feature) {
 // ---------- Click handler ----------
 function onEachFeature(feature, layer) {
   layer.on('click', () => {
-    let key = `${feature.properties.NAME} County, ${feature.properties.STATE}`;
+    let stateFIPS = feature.properties.STATE;
+    let countyName = feature.properties.NAME.toLowerCase();
+    let key = `${stateFIPS}-${countyName}`;
     let row = countyData[key];
+    if (!row) return;
 
     if (!row) return;
 
@@ -101,3 +175,4 @@ function onEachFeature(feature, layer) {
     `;
   });
 }
+

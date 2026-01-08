@@ -40,18 +40,29 @@ Papa.parse("data.csv", {
   header: true,
   download: true,
   complete: function(results) {
+    console.log("Parsed rows:", results.data.length);
 
     results.data.forEach(row => {
-      // Lookup state FIPS
+      // Skip completely empty rows (can happen from trailing newlines)
+      if (!row || (!row.State && !row.County)) {
+        return;
+      }
+
       let stateFIPS = stateToFIPS[row.State];
-      if (!stateFIPS) return;
+      if (!stateFIPS) {
+        // console.log("Unknown state in CSV:", row.State);
+        return;
+      }
 
-      // Normalize county names
-      let countyName = row.County.trim().toLowerCase();
+      // Safely normalize county name
+      let countyName = (row.County || "").trim().toLowerCase();
+      if (!countyName) return;
+
       let key = `${stateFIPS}-${countyName}`;
-
       countyData[key] = row;
     });
+
+    console.log("County records loaded:", Object.keys(countyData).length);
 
     buildFactorList(results.data);
     loadGeoJSON();
@@ -70,7 +81,10 @@ function buildFactorList(data) {
     if (d.factor_3) factors.add(d.factor_3);
   });
 
+  console.log("Unique factors:", factors.size);
+
   let container = document.getElementById("factor-list");
+  container.innerHTML = ""; // clear if reloaded
 
   factors.forEach(f => {
     let div = document.createElement("div");
@@ -91,10 +105,14 @@ function loadGeoJSON() {
   fetch("counties.geojson")
     .then(r => r.json())
     .then(geo => {
+      console.log("GeoJSON features:", geo.features.length);
       geoLayer = L.geoJson(geo, {
         style: styleFeature,
         onEachFeature: onEachFeature
       }).addTo(map);
+    })
+    .catch(err => {
+      console.error("Error loading GeoJSON:", err);
     });
 }
 
@@ -102,7 +120,7 @@ function loadGeoJSON() {
 // Style function for counties
 // =========================
 function styleFeature(feature) {
-  let stateFIPS = feature.properties.STATE; // "01"
+  let stateFIPS = feature.properties.STATE;   // "01"
   let countyName = feature.properties.NAME.toLowerCase(); // "autauga"
 
   let key = `${stateFIPS}-${countyName}`;
@@ -118,7 +136,7 @@ function styleFeature(feature) {
   if (row.factor_2 === activeFactor) contribution = Math.abs(row.contribution_2);
   if (row.factor_3 === activeFactor) contribution = Math.abs(row.contribution_3);
 
-  if (contribution === 0) {
+  if (!contribution || contribution === 0) {
     return { fillOpacity: 0, color: '#333', weight: 0.5 };
   }
 

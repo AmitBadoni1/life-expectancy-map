@@ -64,7 +64,7 @@ let activeFactor = null;
 let geoLayer;
 
 // ---------- Load CSV ----------
-PPapa.parse("data.csv", {
+Papa.parse("data.csv", {
   header: true,
   download: true,
   complete: function(results) {
@@ -73,19 +73,16 @@ PPapa.parse("data.csv", {
       let stateFIPS = stateToFIPS[row.State];
       if (!stateFIPS) return;
 
-      // county names sometimes come without "County"
-      let countyName = row.County.replace(" County", "").trim();
+      let countyName = row.County.trim().toLowerCase();
+      let key = `${stateFIPS}-${countyName}`;
 
-      // your counties.geojson uses numeric COUNTY FIPS
-      // but you do not have county FIPS in CSV
-      // so for now we store by NAME for matching later
-      let key = `${stateFIPS}-${countyName.toLowerCase()}`;
       countyData[key] = row;
     });
 
     buildFactorList(results.data);
   }
 });
+
 
 
 // ---------- Build factor list ----------
@@ -124,14 +121,14 @@ fetch("counties.geojson")
 // ---------- Styling ----------
 function styleFeature(feature) {
 
-  let stateFIPS = feature.properties.STATE; // e.g. "01"
-  let countyName = feature.properties.NAME.toLowerCase(); // e.g. "autauga"
+  let stateFIPS = feature.properties.STATE;
+  let countyName = feature.properties.NAME.toLowerCase();
 
   let key = `${stateFIPS}-${countyName}`;
   let row = countyData[key];
 
   if (!row || !activeFactor) {
-    return { fillOpacity: 0 };
+    return { fillOpacity: 0, color: '#333', weight: 0.5 };
   }
 
   let contribution = 0;
@@ -158,12 +155,11 @@ function onEachFeature(feature, layer) {
     let countyName = feature.properties.NAME.toLowerCase();
     let key = `${stateFIPS}-${countyName}`;
     let row = countyData[key];
-    if (!row) return;
-
+    
     if (!row) return;
 
     document.getElementById("county-info").innerHTML = `
-      <b>${key}</b><br/><br/>
+      <b>${row.County}, ${row.State}</b><br/><br/>
       <b>Top factors:</b>
       <ol>
         <li>${row.factor_1} (${row.contribution_1})</li>
@@ -175,4 +171,5 @@ function onEachFeature(feature, layer) {
     `;
   });
 }
+
 

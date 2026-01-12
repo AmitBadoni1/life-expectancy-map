@@ -1,6 +1,15 @@
-// =========================
-// Only the 4 mappings you requested
-// =========================
+//-----------------------------------------
+// CONFIG
+//-----------------------------------------
+const DATA_CSV = "data.csv";
+const GEOJSON_FILE = "counties.geojson";
+
+let map;
+let geoLayer;
+let countyData = {};
+let activeFactor = null;
+
+// Factor rename overrides
 const FACTOR_RENAME = {
   "E_UNEMP": "% Unemployed Population",
   "E_PARK": "% Area within 1 mil of greenspace",
@@ -8,207 +17,191 @@ const FACTOR_RENAME = {
   "E_NOINT": "% Population without internet",
   "E_TOTCR": "Air toxics cancer risk"
 };
-const FACTOR_BUCKET = {
-  "Environmental": ["E_PARK", "E_MOBILE", "E_NOINT", "E_TOTCR"],
+
+// Factor -> bucket mapping
+const FACTOR_BUCKETS = {
+  "Environmental": ["E_TOTCR", "E_PARK"],
   "Health": [
     "Obesity among adults aged >=18 years",
     "Current asthma among adults aged >=18 years",
     "Sleeping less than 7 hours among adults aged >=18 years",
-    "% Food Insecure",
-    "Cervical cancer screening among adult women aged 21-65 years",
-    "Older adult women aged >=65 years..."
+    "Older adult women aged >=65 years who are up to date on a core set of clinical preventive services: Flu shot past year, PPV shot ever, Colorectal cancer screening, and Mammogram past 2 years"
   ],
-  "Income & Socioeconomic": [
-    "E_UNEMP",
+  "Income": [
     "Household Income (Pacific Islander)",
-    "Visits to doctor for routine checkup within the past year among adults aged >=18 years"
+    "% Food Insecure",
+    "% Population without internet"
   ],
   "Demographics": [
-    "% Asian"
+    "% Asian",
+    "% Unemployed",
+    "% Unemployed Population"
   ],
   "Other": [
-    "Average Grade Performance"
+    "Average Grade Performance",
+    "Visits to doctor for routine checkup within the past year among adults aged >=18 years",
+    "Cervical cancer screening among adult women aged 21-65 years"
   ]
 };
 
+//-----------------------------------------
+// INITIALIZE MAP
+//-----------------------------------------
+function initMap() {
+  map = L.map('map').setView([37.8, -96], 4);
 
-// Renaming helper
-function renameFactor(f) {
-  if (!f) return f;
-  return FACTOR_RENAME[f.trim()] || f;
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
 }
 
-// =========================
-// State → FIPS lookup
-// =========================
-const stateToFIPS = {
-  "Alabama": "01", "Alaska": "02", "Arizona": "04", "Arkansas": "05",
-  "California": "06", "Colorado": "08", "Connecticut": "09", "Delaware": "10",
-  "District of Columbia": "11", "Florida": "12", "Georgia": "13", "Hawaii": "15",
-  "Idaho": "16", "Illinois": "17", "Indiana": "18", "Iowa": "19", "Kansas": "20",
-  "Kentucky": "21", "Louisiana": "22", "Maine": "23", "Maryland": "24",
-  "Massachusetts": "25", "Michigan": "26", "Minnesota": "27", "Mississippi": "28",
-  "Missouri": "29", "Montana": "30", "Nebraska": "31", "Nevada": "32",
-  "New Hampshire": "33", "New Jersey": "34", "New Mexico": "35", "New York": "36",
-  "North Carolina": "37", "North Dakota": "38", "Ohio": "39", "Oklahoma": "40",
-  "Oregon": "41", "Pennsylvania": "42", "Rhode Island": "44",
-  "South Carolina": "45", "South Dakota": "46", "Tennessee": "47", "Texas": "48",
-  "Utah": "49", "Vermont": "50", "Virginia": "51", "Washington": "53",
-  "West Virginia": "54", "Wisconsin": "55", "Wyoming": "56"
-};
-
-// =========================
-// Globals
-// =========================
-let countyData = {};
-let activeFactor = null;
-let geoLayer;
-
-// =========================
-// Leaflet init
-// =========================
-let map = L.map('map').setView([37.8, -96], 4);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
-}).addTo(map);
-
-// =========================
-// Load CSV
-// =========================
-Papa.parse("data.csv", {
-  header: true,
-  download: true,
-  complete: function(results) {
-
-    results.data.forEach(row => {
-      if (!row || (!row.State && !row.County)) return;
-
-      let stateFIPS = stateToFIPS[row.State];
-      if (!stateFIPS) return;
-
-      let countyName = (row.County || "").trim().toLowerCase();
-      if (!countyName) return;
-
-      let key = `${stateFIPS}-${countyName}`;
-      countyData[key] = row;
-    });
-
-    buildFactorList(results.data);
-    loadGeoJSON();
-  }
-});
-
-// =========================
-// Build factor list
-// =========================
-function buildFactorList() {
-  // Clear buckets
-  document.querySelectorAll(".bucket .factor-list").forEach(div => div.innerHTML = "");
-
-  topFactors.forEach(f => {
-    let bucket = findBucketFor(f) || "Other";
-    let target = document.querySelector(`#bucket-${bucket.toLowerCase().replace(/ & /g,"-").replace(/ /g,"-")} .factor-list`);
-    let el = document.createElement("div");
-    el.className = "factor";
-    el.innerText = f;
-    el.onclick = () => clickFactor(f);
-    target.appendChild(el);
+//-----------------------------------------
+// LOAD CSV
+//-----------------------------------------
+function loadCSV() {
+  Papa.parse(DATA_CSV, {
+    header: true,
+    download: true,
+    complete: results => {
+      results.data.forEach(row => {
+        if (!row.State || !row.County) return;
+        const key = `${row.County} County, ${row.State}`;
+        countyData[key] = row;
+      });
+      loadGeoJSON();
+    }
   });
 }
 
-function findBucketFor(f) {
-  for (let [bucket, values] of Object.entries(FACTOR_BUCKET)) {
-    if (values.includes(f)) return bucket;
-  }
-  return "Other";
-}
-
-  let container = document.getElementById("factor-list");
-  container.innerHTML = "";
-
-  factors.forEach(f => {
-    let div = document.createElement("div");
-    div.className = "factor";
-    div.innerText = renameFactor(f);  // <— NO MORE X — X
-
-    div.onclick = () => {
-      activeFactor = f; // use CSV value for filtering
-      if (geoLayer) geoLayer.setStyle(styleFeature);
-    };
-
-    container.appendChild(div);
-  });
-}
-
-// =========================
-// Load GeoJSON
-// =========================
+//-----------------------------------------
+// LOAD GEOJSON
+//-----------------------------------------
 function loadGeoJSON() {
-  fetch("counties.geojson")
+  fetch(GEOJSON_FILE)
     .then(r => r.json())
-    .then(geo => {
-      geoLayer = L.geoJson(geo, {
-        style: styleFeature,
-        onEachFeature: onEachFeature
+    .then(geojson => {
+      geoLayer = L.geoJSON(geojson, {
+        style: baseStyle,
+        onEachFeature: onEachCounty
       }).addTo(map);
+
+      fillBuckets();
     });
 }
 
-// =========================
-// Style for highlighting
-// =========================
-function styleFeature(feature) {
-  let stateFIPS = feature.properties.STATE;
-  let countyName = feature.properties.NAME.toLowerCase();
-  let key = `${stateFIPS}-${countyName}`;
-  let row = countyData[key];
-
-  if (!row || !activeFactor) {
-    return { fillOpacity: 0, color: '#333', weight: 0.5 };
-  }
-
-  let contribution = 0;
-  if (row.factor_1 === activeFactor) contribution = Math.abs(row.contribution_1);
-  if (row.factor_2 === activeFactor) contribution = Math.abs(row.contribution_2);
-  if (row.factor_3 === activeFactor) contribution = Math.abs(row.contribution_3);
-
-  if (!contribution) {
-    return { fillOpacity: 0, color: '#333', weight: 0.5 };
-  }
-
+//-----------------------------------------
+// BASE MAP STYLE
+//-----------------------------------------
+function baseStyle() {
   return {
-    fillColor: 'red',
-    fillOpacity: Math.min(contribution, 1),
+    color: "#555",
     weight: 0.5,
-    color: '#333'
+    fillOpacity: 0.15,
+    fillColor: "#ffffff"
   };
 }
 
-// =========================
-// Click → show county info
-// =========================
-function onEachFeature(feature, layer) {
-  layer.on('click', () => {
-    let stateFIPS = feature.properties.STATE;
-    let countyName = feature.properties.NAME.toLowerCase();
-    let key = `${stateFIPS}-${countyName}`;
-    let row = countyData[key];
+//-----------------------------------------
+// FACTOR STYLE WHEN ACTIVE
+//-----------------------------------------
+function styleCounty(feature) {
+  const key = `${feature.properties.NAME} County, ${feature.properties.STATE}`;
+  const row = countyData[key];
+  if (!row || !activeFactor) return baseStyle();
 
-    if (!row) return;
+  let contribution = 0;
 
-    document.getElementById("county-info").innerHTML = `
-      <b>${row.County}, ${row.State}</b><br/><br/>
-      <b>Top factors:</b>
-      <ol>
-        <li>${renameFactor(row.factor_1)} (${row.contribution_1})</li>
-        <li>${renameFactor(row.factor_2)} (${row.contribution_2})</li>
-        <li>${renameFactor(row.factor_3)} (${row.contribution_3})</li>
-      </ol>
-      <b>Predicted:</b> ${row.predicted_life_expectancy}<br/>
-      <b>Actual:</b> ${row.actual_life_expectancy}
-    `;
+  if (row.factor_1 === activeFactor) contribution = Math.abs(parseFloat(row.contribution_1 || 0));
+  if (row.factor_2 === activeFactor) contribution = Math.abs(parseFloat(row.contribution_2 || 0));
+  if (row.factor_3 === activeFactor) contribution = Math.abs(parseFloat(row.contribution_3 || 0));
+
+  if (contribution === 0) return baseStyle();
+
+  return {
+    color: "#800000",
+    weight: 0.6,
+    fillOpacity: Math.min(contribution, 0.9),
+    fillColor: "#ff4f4f"
+  };
+}
+
+//-----------------------------------------
+// COUNTY CLICK HANDLER
+//-----------------------------------------
+function onEachCounty(feature, layer) {
+  layer.on("click", () => showCountyDetails(feature));
+}
+
+function showCountyDetails(feature) {
+  const key = `${feature.properties.NAME} County, ${feature.properties.STATE}`;
+  const row = countyData[key];
+
+  const titleEl = document.getElementById("county-title");
+  const detailEl = document.getElementById("county-details");
+
+  if (!row) {
+    titleEl.textContent = feature.properties.NAME + " (no data)";
+    detailEl.innerHTML = "";
+    return;
+  }
+
+  titleEl.textContent = key;
+
+  const factors = [
+    { name: row.factor_1, val: parseFloat(row.contribution_1) },
+    { name: row.factor_2, val: parseFloat(row.contribution_2) },
+    { name: row.factor_3, val: parseFloat(row.contribution_3) }
+  ]
+    .filter(d => d.name)
+    .sort((a, b) => Math.abs(b.val) - Math.abs(a.val));
+
+  let html = `<b>Top factors:</b><br><ol>`;
+  factors.forEach(f => {
+    html += `<li>${renameFactor(f.name)} (${f.val.toFixed(4)})</li>`;
+  });
+  html += `</ol>`;
+
+  html += `<b>Predicted:</b> ${parseFloat(row.predicted_life_expectancy).toFixed(2)}<br>`;
+  html += `<b>Actual:</b> ${parseFloat(row.actual_life_expectancy).toFixed(2)}<br>`;
+
+  detailEl.innerHTML = html;
+}
+
+//-----------------------------------------
+// FACTOR RENAME FUNCTION
+//-----------------------------------------
+function renameFactor(name) {
+  return FACTOR_RENAME[name] || name;
+}
+
+//-----------------------------------------
+// FILL BUCKETS WITH FACTORS
+//-----------------------------------------
+function fillBuckets() {
+  Object.entries(FACTOR_BUCKETS).forEach(([bucket, list]) => {
+    const div = document.querySelector(`#bucket-${bucket.toLowerCase()} .factor-list`);
+    div.innerHTML = "";
+
+    list.forEach(factor => {
+      const el = document.createElement("div");
+      el.className = "factor";
+      el.textContent = renameFactor(factor);
+      el.onclick = () => activateFactor(factor);
+      div.appendChild(el);
+    });
   });
 }
 
+//-----------------------------------------
+// ACTIVATE FACTOR (HIGHLIGHT MAP)
+//-----------------------------------------
+function activateFactor(factor) {
+  activeFactor = factor;
+  geoLayer.setStyle(styleCounty);
+}
 
+//-----------------------------------------
+// INIT
+//-----------------------------------------
+initMap();
+loadCSV();

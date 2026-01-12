@@ -17,6 +17,79 @@ const stateToFIPS = {
   "West Virginia": "54", "Wisconsin": "55", "Wyoming": "56"
 };
 
+// factorDefinitions.js
+
+const FACTOR_DEFS = {
+  "STATEFP": "State FIPS code",
+  "COUNTYFP": "County FIPS code",
+  "TRACTCE": "Census tract code",
+  "AFFGEOID": "Census tract full identifier",
+  "GEOID": "11-digit tract ID",
+  "COUNTY": "County name",
+  "StateAbbr": "State abbreviation",
+  "StateDesc": "State full name",
+  "Location": "Text location",
+  "E_TOTPOP": "Population estimate",
+  "M_TOTPOP": "Pop estimate margin of error",
+  "E_DAYPOP": "Estimated daytime population",
+  "SPL_EJI": "Environmental Justice index",
+  "RPL_EJI": "EJI percentile rank",
+  "SPL_SER": "Social/Environmental risk sum",
+  "RPL_SER": "SER percentile rank",
+  "EP_MINRTY": "% racial/ethnic minority",
+  "EPL_MINRTY": "Minority percentile rank",
+  "SPL_SVM_DOM1": "Minority domain sum",
+  "RPL_SVM_DOM1": "Minority domain percentile",
+  "EP_POV200": "% below 200% poverty line",
+  "EPL_POV200": "Poverty percentile",
+  "EP_NOHSDP": "% no high school diploma",
+  "EPL_NOHSDP": "No-HS diploma percentile",
+  "EP_UNEMP": "% unemployed",
+  "EPL_UNEMP": "Unemployment percentile",
+  "EP_RENTER": "% renter-occupied housing",
+  "EPL_RENTER": "Renter percentile",
+  "EP_HOUBDN": "% housing cost burdened",
+  "EPL_HOUBDN": "Housing burden percentile",
+  "EP_UNINSUR": "% uninsured",
+  "EPL_UNINSUR": "Uninsured percentile",
+  "EP_NOINT": "% no internet",
+  "EPL_NOINT": "No-internet percentile",
+  "EP_AGE65": "% aged 65+",
+  "EPL_AGE65": "65+ percentile",
+  "EP_AGE17": "% aged <17",
+  "EPL_AGE17": "<17 percentile",
+  "EP_DISABL": "% disabled population",
+  "EPL_DISABL": "Disability percentile",
+  "EP_LIMENG": "% limited English",
+  "EPL_LIMENG": "Limited-English percentile",
+  "EP_MOBILE": "% mobile homes",
+  "EPL_MOBILE": "Mobile homes percentile",
+  "EP_GROUPQ": "% group quarters",
+  "EPL_GROUPQ": "Group quarters percentile",
+  "E_OZONE": "Days above ozone limit",
+  "EPL_OZONE": "Ozone percentile",
+  "E_PM": "Days above PM2.5 limit",
+  "EPL_PM": "PM2.5 percentile",
+  "E_DSLPM": "Diesel particulate matter",
+  "EPL_DSLPM": "Diesel PM percentile",
+  "E_TOTCR": "Air toxics cancer risk",
+  "EPL_TOTCR": "Cancer risk percentile",
+  "EP_ASTHMA": "% asthma",
+  "EPL_ASTHMA": "Asthma percentile",
+  "EP_CANCER": "% cancer",
+  "EPL_CANCER": "Cancer percentile",
+  "EP_MHLTH": "% poor mental health",
+  "EPL_MHLTH": "Mental health percentile",
+  "EP_DIABETES": "% diabetes",
+  "EPL_DIABETES": "Diabetes percentile"
+  // ... add more if needed
+};
+
+// Helper → returns description or raw name
+function prettyFactor(f) {
+  return FACTOR_DEFS[f] || f || "";
+}
+
 // =========================
 // Global storage
 // =========================
@@ -43,18 +116,13 @@ Papa.parse("data.csv", {
     console.log("Parsed rows:", results.data.length);
 
     results.data.forEach(row => {
-      // Skip completely empty rows (can happen from trailing newlines)
       if (!row || (!row.State && !row.County)) {
         return;
       }
 
       let stateFIPS = stateToFIPS[row.State];
-      if (!stateFIPS) {
-        // console.log("Unknown state in CSV:", row.State);
-        return;
-      }
+      if (!stateFIPS) return;
 
-      // Safely normalize county name
       let countyName = (row.County || "").trim().toLowerCase();
       if (!countyName) return;
 
@@ -84,12 +152,12 @@ function buildFactorList(data) {
   console.log("Unique factors:", factors.size);
 
   let container = document.getElementById("factor-list");
-  container.innerHTML = ""; // clear if reloaded
+  container.innerHTML = "";
 
   factors.forEach(f => {
     let div = document.createElement("div");
     div.className = "factor";
-    div.innerText = f;
+    div.innerText = prettyFactor(f);   // use pretty name
     div.onclick = () => {
       activeFactor = f;
       if (geoLayer) geoLayer.setStyle(styleFeature);
@@ -120,8 +188,8 @@ function loadGeoJSON() {
 // Style function for counties
 // =========================
 function styleFeature(feature) {
-  let stateFIPS = feature.properties.STATE;   // "01"
-  let countyName = feature.properties.NAME.toLowerCase(); // "autauga"
+  let stateFIPS = feature.properties.STATE;
+  let countyName = feature.properties.NAME.toLowerCase();
 
   let key = `${stateFIPS}-${countyName}`;
   let row = countyData[key];
@@ -164,9 +232,9 @@ function onEachFeature(feature, layer) {
       <b>${row.County}, ${row.State}</b><br/><br/>
       <b>Top factors:</b>
       <ol>
-        <li>${row.factor_1} (${row.contribution_1})</li>
-        <li>${row.factor_2} (${row.contribution_2})</li>
-        <li>${row.factor_3} (${row.contribution_3})</li>
+        <li>${prettyFactor(row.factor_1)} (${row.contribution_1})</li>
+        <li>${prettyFactor(row.factor_2)} (${row.contribution_2})</li>
+        <li>${prettyFactor(row.factor_3)} (${row.contribution_3})</li>
       </ol>
       <b>Predicted:</b> ${row.predicted_life_expectancy}<br/>
       <b>Actual:</b> ${row.actual_life_expectancy}

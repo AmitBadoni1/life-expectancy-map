@@ -66,10 +66,17 @@ function loadCSV() {
     download: true,
     complete: results => {
       results.data.forEach(row => {
-        if (!row.State || !row.County) return;
-        const key = `${row.County} County, ${row.State}`;
+        const state = row.State?.trim();
+        const county = row.County?.trim();
+
+        if (!state || !county) return;
+
+        // Match GeoJSON naming convention
+        const key = `${county} County, ${state}`;
         countyData[key] = row;
       });
+
+      console.log("Loaded:", Object.keys(countyData).length, "counties");
       loadGeoJSON();
     }
   });
@@ -207,5 +214,6 @@ function activateFactor(factor) {
 //-----------------------------------------
 initMap();
 loadCSV();
+
 
 

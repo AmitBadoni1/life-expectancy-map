@@ -5,7 +5,8 @@ const FACTOR_RENAME = {
   "E_UNEMP": "% Unemployed Population",
   "E_PARK": "% Area within 1 mil of greenspace",
   "E_MOBILE": "% Housing as Mobile Homes",
-  "E_NOINT": "% Population without internet"
+  "E_NOINT": "% Population without internet",
+  "E_TOTCR": "Air toxics cancer risk"
 };
 
 // Renaming helper
@@ -173,3 +174,4 @@ function onEachFeature(feature, layer) {
     `;
   });
 }
+

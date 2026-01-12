@@ -8,6 +8,29 @@ const FACTOR_RENAME = {
   "E_NOINT": "% Population without internet",
   "E_TOTCR": "Air toxics cancer risk"
 };
+const FACTOR_BUCKET = {
+  "Environmental": ["E_PARK", "E_MOBILE", "E_NOINT", "E_TOTCR"],
+  "Health": [
+    "Obesity among adults aged >=18 years",
+    "Current asthma among adults aged >=18 years",
+    "Sleeping less than 7 hours among adults aged >=18 years",
+    "% Food Insecure",
+    "Cervical cancer screening among adult women aged 21-65 years",
+    "Older adult women aged >=65 years..."
+  ],
+  "Income & Socioeconomic": [
+    "E_UNEMP",
+    "Household Income (Pacific Islander)",
+    "Visits to doctor for routine checkup within the past year among adults aged >=18 years"
+  ],
+  "Demographics": [
+    "% Asian"
+  ],
+  "Other": [
+    "Average Grade Performance"
+  ]
+};
+
 
 // Renaming helper
 function renameFactor(f) {
@@ -79,14 +102,27 @@ Papa.parse("data.csv", {
 // =========================
 // Build factor list
 // =========================
-function buildFactorList(data) {
-  let factors = new Set();
+function buildFactorList() {
+  // Clear buckets
+  document.querySelectorAll(".bucket .factor-list").forEach(div => div.innerHTML = "");
 
-  data.forEach(d => {
-    if (d.factor_1) factors.add(d.factor_1);
-    if (d.factor_2) factors.add(d.factor_2);
-    if (d.factor_3) factors.add(d.factor_3);
+  topFactors.forEach(f => {
+    let bucket = findBucketFor(f) || "Other";
+    let target = document.querySelector(`#bucket-${bucket.toLowerCase().replace(/ & /g,"-").replace(/ /g,"-")} .factor-list`);
+    let el = document.createElement("div");
+    el.className = "factor";
+    el.innerText = f;
+    el.onclick = () => clickFactor(f);
+    target.appendChild(el);
   });
+}
+
+function findBucketFor(f) {
+  for (let [bucket, values] of Object.entries(FACTOR_BUCKET)) {
+    if (values.includes(f)) return bucket;
+  }
+  return "Other";
+}
 
   let container = document.getElementById("factor-list");
   container.innerHTML = "";
@@ -174,4 +210,5 @@ function onEachFeature(feature, layer) {
     `;
   });
 }
+
 

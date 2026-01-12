@@ -63,7 +63,11 @@ const FACTOR_DEFS = {
   "EP_MHLTH": "% poor mental health",
   "EPL_MHLTH": "Mental health percentile",
   "EP_DIABETES": "% diabetes",
-  "EPL_DIABETES": "Diabetes percentile"
+  "EPL_DIABETES": "Diabetes percentile",
+  "E_UNEMP": "% Unemployed Population",
+  "E_PARK": "% Area within 1 mil of greenspace",
+  "E_MOBILE": "% Housing as Mobile Homes", 
+  "E_NOINT": "% Popluation without internet"
 };
 
 // =========================
@@ -222,3 +226,4 @@ function onEachFeature(feature, layer) {
     `;
   });
 }
+

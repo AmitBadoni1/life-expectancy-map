@@ -149,7 +149,12 @@ function buildFactorList(data) {
     let human = FACTOR_DEFS[code] || code; // fallback to code
     let div = document.createElement("div");
     div.className = "factor";
-    div.innerHTML = `<b>${code}</b> — ${human}`;
+    if (code === human) {
+        div.innerHTML = `${code}`;   // already human-readable
+      } else {
+        div.innerHTML = `<b>${code}</b> — ${human}`;  // mapped short code
+      }
+
     div.onclick = () => {
       activeFactor = code;
       if (geoLayer) geoLayer.setStyle(styleFeature);
@@ -226,4 +231,5 @@ function onEachFeature(feature, layer) {
     `;
   });
 }
+
 

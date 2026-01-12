@@ -2,7 +2,6 @@
 // CONFIG
 //-----------------------------------------
 
-
 const DATA_CSV = "data.csv";
 const GEOJSON_FILE = "counties.geojson";
 
@@ -11,7 +10,27 @@ let geoLayer;
 let countyData = {};
 let activeFactor = null;
 
-// Factor rename overrides
+//-----------------------------------------
+// STATE FIPS → STATE NAME LOOKUP
+//-----------------------------------------
+const STATE_FIPS_TO_NAME = {
+  "01": "Alabama", "02": "Alaska", "04": "Arizona", "05": "Arkansas", "06": "California",
+  "08": "Colorado", "09": "Connecticut", "10": "Delaware", "11": "District of Columbia",
+  "12": "Florida", "13": "Georgia", "15": "Hawaii", "16": "Idaho", "17": "Illinois",
+  "18": "Indiana", "19": "Iowa", "20": "Kansas", "21": "Kentucky", "22": "Louisiana",
+  "23": "Maine", "24": "Maryland", "25": "Massachusetts", "26": "Michigan", "27": "Minnesota",
+  "28": "Mississippi", "29": "Missouri", "30": "Montana", "31": "Nebraska", "32": "Nevada",
+  "33": "New Hampshire", "34": "New Jersey", "35": "New Mexico", "36": "New York",
+  "37": "North Carolina", "38": "North Dakota", "39": "Ohio", "40": "Oklahoma",
+  "41": "Oregon", "42": "Pennsylvania", "44": "Rhode Island", "45": "South Carolina",
+  "46": "South Dakota", "47": "Tennessee", "48": "Texas", "49": "Utah", "50": "Vermont",
+  "51": "Virginia", "53": "Washington", "54": "West Virginia", "55": "Wisconsin", "56": "Wyoming"
+};
+
+//-----------------------------------------
+// FACTOR RENAME OVERRIDES
+//-----------------------------------------
+
 const FACTOR_RENAME = {
   "E_UNEMP": "% Unemployed Population",
   "E_PARK": "% Area within 1 mil of greenspace",
@@ -20,7 +39,10 @@ const FACTOR_RENAME = {
   "E_TOTCR": "Air toxics cancer risk"
 };
 
-// Factor -> bucket mapping
+//-----------------------------------------
+// FACTOR BUCKETS
+//-----------------------------------------
+
 const FACTOR_BUCKETS = {
   "Environmental": ["E_TOTCR", "E_PARK"],
   "Health": [
@@ -47,11 +69,11 @@ const FACTOR_BUCKETS = {
 };
 
 //-----------------------------------------
-// INITIALIZE MAP
+// INIT MAP
 //-----------------------------------------
+
 function initMap() {
   map = L.map('map').setView([37.8, -96], 4);
-
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
@@ -60,23 +82,17 @@ function initMap() {
 //-----------------------------------------
 // LOAD CSV
 //-----------------------------------------
+
 function loadCSV() {
   Papa.parse(DATA_CSV, {
     header: true,
     download: true,
     complete: results => {
       results.data.forEach(row => {
-        const state = row.State?.trim();
-        const county = row.County?.trim();
-
-        if (!state || !county) return;
-
-        // Match GeoJSON naming convention
-        const key = `${county} County, ${state}`;
+        if (!row.State || !row.County) return;
+        const key = `${row.County} County, ${row.State}`;
         countyData[key] = row;
       });
-
-      console.log("Loaded:", Object.keys(countyData).length, "counties");
       loadGeoJSON();
     }
   });
@@ -85,6 +101,7 @@ function loadCSV() {
 //-----------------------------------------
 // LOAD GEOJSON
 //-----------------------------------------
+
 function loadGeoJSON() {
   fetch(GEOJSON_FILE)
     .then(r => r.json())
@@ -99,8 +116,9 @@ function loadGeoJSON() {
 }
 
 //-----------------------------------------
-// BASE MAP STYLE
+// MAP BASE STYLE
 //-----------------------------------------
+
 function baseStyle() {
   return {
     color: "#555",
@@ -111,15 +129,17 @@ function baseStyle() {
 }
 
 //-----------------------------------------
-// FACTOR STYLE WHEN ACTIVE
+// STYLE WHEN FACTOR ACTIVE
 //-----------------------------------------
+
 function styleCounty(feature) {
-  const key = `${feature.properties.NAME} County, ${feature.properties.STATE}`;
+  const stateName = STATE_FIPS_TO_NAME[feature.properties.STATE];
+  const key = `${feature.properties.NAME} County, ${stateName}`;
   const row = countyData[key];
+
   if (!row || !activeFactor) return baseStyle();
 
   let contribution = 0;
-
   if (row.factor_1 === activeFactor) contribution = Math.abs(parseFloat(row.contribution_1 || 0));
   if (row.factor_2 === activeFactor) contribution = Math.abs(parseFloat(row.contribution_2 || 0));
   if (row.factor_3 === activeFactor) contribution = Math.abs(parseFloat(row.contribution_3 || 0));
@@ -135,17 +155,16 @@ function styleCounty(feature) {
 }
 
 //-----------------------------------------
-// COUNTY CLICK HANDLER
+// COUNTY CLICK
 //-----------------------------------------
+
 function onEachCounty(feature, layer) {
-  layer.on("click", () => {
-    console.log("Feature properties:", feature.properties);
-    showCountyDetails(feature);
-  });
+  layer.on("click", () => showCountyDetails(feature));
 }
 
 function showCountyDetails(feature) {
-  const key = `${feature.properties.NAME} County, ${feature.properties.STATE}`;
+  const stateName = STATE_FIPS_TO_NAME[feature.properties.STATE];
+  const key = `${feature.properties.NAME} County, ${stateName}`;
   const row = countyData[key];
 
   const titleEl = document.getElementById("county-title");
@@ -180,8 +199,9 @@ function showCountyDetails(feature) {
 }
 
 //-----------------------------------------
-// FACTOR RENAME FUNCTION
+// RENAME HELPER
 //-----------------------------------------
+
 function renameFactor(name) {
   return FACTOR_RENAME[name] || name;
 }
@@ -189,11 +209,13 @@ function renameFactor(name) {
 //-----------------------------------------
 // FILL BUCKETS WITH FACTORS
 //-----------------------------------------
+
 function fillBuckets() {
   Object.entries(FACTOR_BUCKETS).forEach(([bucket, list]) => {
     const div = document.querySelector(`#bucket-${bucket.toLowerCase()} .factor-list`);
-    div.innerHTML = "";
+    if (!div) return;
 
+    div.innerHTML = "";
     list.forEach(factor => {
       const el = document.createElement("div");
       el.className = "factor";
@@ -205,8 +227,9 @@ function fillBuckets() {
 }
 
 //-----------------------------------------
-// ACTIVATE FACTOR (HIGHLIGHT MAP)
+// ACTIVATE FACTOR
 //-----------------------------------------
+
 function activateFactor(factor) {
   activeFactor = factor;
   geoLayer.setStyle(styleCounty);
@@ -215,9 +238,6 @@ function activateFactor(factor) {
 //-----------------------------------------
 // INIT
 //-----------------------------------------
+
 initMap();
 loadCSV();
-
-
-
-

@@ -1,7 +1,7 @@
 //-----------------------------------------
 // CONFIG
 //-----------------------------------------
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
 
 const DATA_CSV = "data.csv";
 const GEOJSON_FILE = "counties.geojson";
@@ -207,4 +207,5 @@ function activateFactor(factor) {
 //-----------------------------------------
 initMap();
 loadCSV();
+
 

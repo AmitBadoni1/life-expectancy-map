@@ -138,7 +138,10 @@ function styleCounty(feature) {
 // COUNTY CLICK HANDLER
 //-----------------------------------------
 function onEachCounty(feature, layer) {
-  layer.on("click", () => showCountyDetails(feature));
+  layer.on("click", () => {
+    console.log("Feature properties:", feature.properties);
+    showCountyDetails(feature);
+  });
 }
 
 function showCountyDetails(feature) {
@@ -214,6 +217,7 @@ function activateFactor(factor) {
 //-----------------------------------------
 initMap();
 loadCSV();
+
 
 
 

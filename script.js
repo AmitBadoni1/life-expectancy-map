@@ -1,5 +1,5 @@
 // =========================
-// Only the 4 mapping you requested
+// Only the 4 mappings you requested
 // =========================
 const FACTOR_RENAME = {
   "E_UNEMP": "% Unemployed Population",
@@ -8,7 +8,7 @@ const FACTOR_RENAME = {
   "E_NOINT": "% Population without internet"
 };
 
-// Helper to rename only those 4, otherwise return original
+// Renaming helper
 function renameFactor(f) {
   if (!f) return f;
   return FACTOR_RENAME[f.trim()] || f;
@@ -41,7 +41,7 @@ let activeFactor = null;
 let geoLayer;
 
 // =========================
-// Init Leaflet map
+// Leaflet init
 // =========================
 let map = L.map('map').setView([37.8, -96], 4);
 
@@ -76,7 +76,7 @@ Papa.parse("data.csv", {
 });
 
 // =========================
-// Build factor list (sidebar)
+// Build factor list
 // =========================
 function buildFactorList(data) {
   let factors = new Set();
@@ -91,13 +91,12 @@ function buildFactorList(data) {
   container.innerHTML = "";
 
   factors.forEach(f => {
-    let renamed = renameFactor(f);
     let div = document.createElement("div");
     div.className = "factor";
-    div.innerText = renamed;
+    div.innerText = renameFactor(f);  // <— NO MORE X — X
 
     div.onclick = () => {
-      activeFactor = f; // IMPORTANT: use original CSV factor code for filtering
+      activeFactor = f; // use CSV value for filtering
       if (geoLayer) geoLayer.setStyle(styleFeature);
     };
 
@@ -106,7 +105,7 @@ function buildFactorList(data) {
 }
 
 // =========================
-// Load GeoJSON and style counties
+// Load GeoJSON
 // =========================
 function loadGeoJSON() {
   fetch("counties.geojson")
@@ -120,7 +119,7 @@ function loadGeoJSON() {
 }
 
 // =========================
-// Style function for coloring
+// Style for highlighting
 // =========================
 function styleFeature(feature) {
   let stateFIPS = feature.properties.STATE;
@@ -150,7 +149,7 @@ function styleFeature(feature) {
 }
 
 // =========================
-// Click on county → show info
+// Click → show county info
 // =========================
 function onEachFeature(feature, layer) {
   layer.on('click', () => {
@@ -161,17 +160,13 @@ function onEachFeature(feature, layer) {
 
     if (!row) return;
 
-    let f1 = renameFactor(row.factor_1);
-    let f2 = renameFactor(row.factor_2);
-    let f3 = renameFactor(row.factor_3);
-
     document.getElementById("county-info").innerHTML = `
       <b>${row.County}, ${row.State}</b><br/><br/>
       <b>Top factors:</b>
       <ol>
-        <li>${f1} (${row.contribution_1})</li>
-        <li>${f2} (${row.contribution_2})</li>
-        <li>${f3} (${row.contribution_3})</li>
+        <li>${renameFactor(row.factor_1)} (${row.contribution_1})</li>
+        <li>${renameFactor(row.factor_2)} (${row.contribution_2})</li>
+        <li>${renameFactor(row.factor_3)} (${row.contribution_3})</li>
       </ol>
       <b>Predicted:</b> ${row.predicted_life_expectancy}<br/>
       <b>Actual:</b> ${row.actual_life_expectancy}

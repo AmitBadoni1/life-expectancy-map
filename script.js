@@ -1,5 +1,5 @@
 // =========================
-// Factor definitions (user provided)
+// Factor definitions (your map)
 // =========================
 const FACTOR_DEFS = {
   "STATEFP": "State FIPS code",
@@ -66,9 +66,22 @@ const FACTOR_DEFS = {
   "EPL_DIABETES": "Diabetes percentile",
   "E_UNEMP": "% Unemployed Population",
   "E_PARK": "% Area within 1 mil of greenspace",
-  "E_MOBILE": "% Housing as Mobile Homes", 
+  "E_MOBILE": "% Housing as Mobile Homes",
   "E_NOINT": "% Popluation without internet"
 };
+
+// Normalized lookup: lowercased+trimmed keys
+const FACTOR_DEFS_NORM = {};
+for (const key in FACTOR_DEFS) {
+  FACTOR_DEFS_NORM[key.toLowerCase().trim()] = FACTOR_DEFS[key];
+}
+
+// Helper: get human label from factor code or return same if unknown
+function getFactorLabel(code) {
+  if (!code) return "";
+  const norm = code.toString().toLowerCase().trim();
+  return FACTOR_DEFS_NORM[norm] || code;
+}
 
 // =========================
 // State → FIPS lookup
@@ -92,7 +105,7 @@ const stateToFIPS = {
 // =========================
 // Globals
 // =========================
-let countyData = {};
+let countyData = {};   // keyed by stateFIPS-countyName
 let activeFactor = null;
 let geoLayer;
 
@@ -111,17 +124,16 @@ Papa.parse("data.csv", {
   header: true,
   download: true,
   complete: function(results) {
-
     results.data.forEach(row => {
       if (!row || (!row.State && !row.County)) return;
 
-      let stateFIPS = stateToFIPS[row.State];
+      const stateFIPS = stateToFIPS[row.State];
       if (!stateFIPS) return;
 
-      let countyName = (row.County || "").trim().toLowerCase();
+      const countyName = (row.County || "").trim().toLowerCase();
       if (!countyName) return;
 
-      let key = `${stateFIPS}-${countyName}`;
+      const key = `${stateFIPS}-${countyName}`;
       countyData[key] = row;
     });
 
@@ -131,10 +143,10 @@ Papa.parse("data.csv", {
 });
 
 // =========================
-// Build factor list with HUMAN NAMES
+// Build factor list (using mapping when available)
 // =========================
 function buildFactorList(data) {
-  let factors = new Set();
+  const factors = new Set();
 
   data.forEach(d => {
     if (d.factor_1) factors.add(d.factor_1);
@@ -142,23 +154,29 @@ function buildFactorList(data) {
     if (d.factor_3) factors.add(d.factor_3);
   });
 
-  let container = document.getElementById("factor-list");
+  const container = document.getElementById("factor-list");
   container.innerHTML = "";
 
-  factors.forEach(code => {
-    let human = FACTOR_DEFS[code] || code; // fallback to code
-    let div = document.createElement("div");
+  factors.forEach(rawCode => {
+    const code = (rawCode || "").toString();
+    const human = getFactorLabel(code);
+
+    const div = document.createElement("div");
     div.className = "factor";
-    if (code === human) {
-        div.innerHTML = `${code}`;   // already human-readable
-      } else {
-        div.innerHTML = `<b>${code}</b> — ${human}`;  // mapped short code
-      }
+
+    // If we have a different human label, show "CODE — Label"
+    if (human !== code) {
+      div.innerHTML = `<b>${code}</b> — ${human}`;
+    } else {
+      // Already human-readable or no mapping; show once
+      div.innerHTML = code;
+    }
 
     div.onclick = () => {
       activeFactor = code;
       if (geoLayer) geoLayer.setStyle(styleFeature);
     };
+
     container.appendChild(div);
   });
 }
@@ -181,19 +199,24 @@ function loadGeoJSON() {
 // Style counties
 // =========================
 function styleFeature(feature) {
-  let stateFIPS = feature.properties.STATE;
-  let countyName = feature.properties.NAME.toLowerCase();
-  let key = `${stateFIPS}-${countyName}`;
-  let row = countyData[key];
+  const stateFIPS = feature.properties.STATE;
+  const countyName = feature.properties.NAME.toLowerCase();
+  const key = `${stateFIPS}-${countyName}`;
+  const row = countyData[key];
 
-  if (!row || !activeFactor) return { fillOpacity: 0, color: '#333', weight: 0.5 };
+  if (!row || !activeFactor) {
+    return { fillOpacity: 0, color: '#333', weight: 0.5 };
+  }
 
   let contribution = 0;
+
   if (row.factor_1 === activeFactor) contribution = Math.abs(row.contribution_1);
   if (row.factor_2 === activeFactor) contribution = Math.abs(row.contribution_2);
   if (row.factor_3 === activeFactor) contribution = Math.abs(row.contribution_3);
 
-  if (!contribution) return { fillOpacity: 0, color: '#333', weight: 0.5 };
+  if (!contribution) {
+    return { fillOpacity: 0, color: '#333', weight: 0.5 };
+  }
 
   return {
     fillColor: 'red',
@@ -204,32 +227,39 @@ function styleFeature(feature) {
 }
 
 // =========================
-// Click handler — also HUMAN NAMES
+// Click handler — show mapped factor names
 // =========================
 function onEachFeature(feature, layer) {
   layer.on('click', () => {
-    let stateFIPS = feature.properties.STATE;
-    let countyName = feature.properties.NAME.toLowerCase();
-    let key = `${stateFIPS}-${countyName}`;
-    let row = countyData[key];
+    const stateFIPS = feature.properties.STATE;
+    const countyName = feature.properties.NAME.toLowerCase();
+    const key = `${stateFIPS}-${countyName}`;
+    const row = countyData[key];
     if (!row) return;
 
-    let f1 = FACTOR_DEFS[row.factor_1] || row.factor_1;
-    let f2 = FACTOR_DEFS[row.factor_2] || row.factor_2;
-    let f3 = FACTOR_DEFS[row.factor_3] || row.factor_3;
+    const f1Code = row.factor_1;
+    const f2Code = row.factor_2;
+    const f3Code = row.factor_3;
+
+    const f1Label = getFactorLabel(f1Code);
+    const f2Label = getFactorLabel(f2Code);
+    const f3Label = getFactorLabel(f3Code);
+
+    // Avoid repeating identical code + label
+    const f1Text = (f1Label !== f1Code) ? `<b>${f1Code}</b> — ${f1Label}` : f1Code;
+    const f2Text = (f2Label !== f2Code) ? `<b>${f2Code}</b> — ${f2Label}` : f2Code;
+    const f3Text = (f3Label !== f3Code) ? `<b>${f3Code}</b> — ${f3Label}` : f3Code;
 
     document.getElementById("county-info").innerHTML = `
       <b>${row.County}, ${row.State}</b><br/><br/>
       <b>Top factors:</b>
       <ol>
-        <li><b>${row.factor_1}</b> — ${f1} (${row.contribution_1})</li>
-        <li><b>${row.factor_2}</b> — ${f2} (${row.contribution_2})</li>
-        <li><b>${row.factor_3}</b> — ${f3} (${row.contribution_3})</li>
+        <li>${f1Text} (${row.contribution_1})</li>
+        <li>${f2Text} (${row.contribution_2})</li>
+        <li>${f3Text} (${row.contribution_3})</li>
       </ol>
       <b>Predicted:</b> ${row.predicted_life_expectancy}<br/>
       <b>Actual:</b> ${row.actual_life_expectancy}
     `;
   });
 }
-
-

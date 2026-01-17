@@ -10,11 +10,32 @@
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; }
 
-    #container {
-      display: flex;
+    #page-header {
       width: 100vw;
-      height: 100vh;
+      padding: 16px 24px;
+      background: #ffffff;
+      border-bottom: 1px solid #ddd;
     }
+
+    #page-header h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+    
+    #page-header p {
+      margin: 0;
+      font-size: 14px;
+      color: #333;
+      line-height: 1.4;
+    }
+
+    #container {
+  display: flex;
+  width: 100vw;
+  height: calc(100vh - 90px); /* deduct header height */
+  }
+
 
     #sidebar-left, #sidebar-right {
       width: 25%;
@@ -68,42 +89,21 @@
 
 </head>
 <body>
-  
-  <div id="container">
 
+  <div id="page-header">
+    <h1>Page Description</h1>
+    <p>
+      Hi and welcome to my page! This page helps you visualize the factors that influence life expectancy across various US counties.
+      The counties considered for this visualization are the ones for which the average mean error was <=1 years which were about half
+      the counties (1500 out of 3000). There are two features - feature 1 helps you narrow down on counties based on a specific contributing
+      factor. Feature 2 helps you visualize the factors contributing to a particular county.
+    </p>
+  </div>
+
+  <div id="container">
     <!-- LEFT SIDEBAR -->
     <div id="sidebar-left">
-      <h2>Factors</h2>
-      <p class="hint">
-        These are variables that show up as a top contributor for at least one U.S. county.<br>
-        Click a factor to highlight where it matters.
-      </p>
-
-      <div class="bucket" id="bucket-environmental">
-        <h3>Environmental</h3>
-        <div class="factor-list"></div>
-      </div>
-
-      <div class="bucket" id="bucket-health">
-        <h3>Health</h3>
-        <div class="factor-list"></div>
-      </div>
-
-      <div class="bucket" id="bucket-income">
-        <h3>Income & Socioeconomic</h3>
-        <div class="factor-list"></div>
-      </div>
-
-      <div class="bucket" id="bucket-demographics">
-        <h3>Demographics</h3>
-        <div class="factor-list"></div>
-      </div>
-
-      <div class="bucket" id="bucket-other">
-        <h3>Other</h3>
-        <div class="factor-list"></div>
-      </div>
-
+      ... (your existing left sidebar code stays unchanged)
     </div>
 
     <!-- MAP -->
@@ -114,17 +114,11 @@
       <h2 id="county-title">Click a county</h2>
       <div id="county-details"></div>
     </div>
-
   </div>
-<!-- SCRIPTS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="script.js?v=11"></script>
-  
-
 
 </body>
 </html>
+
 
 
 

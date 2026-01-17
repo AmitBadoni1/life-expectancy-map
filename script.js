@@ -163,6 +163,8 @@ function onEachCounty(feature, layer) {
 }
 
 function showCountyDetails(feature) {
+  document.getElementById("county-intro")?.style.setProperty("display","none");
+
   const stateName = STATE_FIPS_TO_NAME[feature.properties.STATE];
   const key = `${feature.properties.NAME} County, ${stateName}`;
   const row = countyData[key];
@@ -241,3 +243,4 @@ function activateFactor(factor) {
 
 initMap();
 loadCSV();
+

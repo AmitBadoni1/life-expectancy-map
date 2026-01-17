@@ -5,27 +5,35 @@
   <title>Life Expectancy Drivers</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
-  <style>
+<style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-  * {
-    box-sizing: border-box;
+  :root {
+    --bg-main: #111827;
+    --bg-panel: #1f2937;
+    --border: #374151;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+    --factor-hover-bg: rgba(59, 130, 246, 0.15);
   }
+
+  * { box-sizing: border-box; }
 
   body {
     margin: 0;
     font-family: 'Inter', sans-serif;
-    background: #f7f8fa;
-    color: #222;
+    background: var(--bg-main);
+    color: var(--text-primary);
   }
 
   /* ===== HEADER ===== */
   #page-header {
     width: 100%;
     padding: 18px 28px;
-    background: #ffffff;
-    border-bottom: 1px solid #e2e4e8;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
   }
 
   #page-header h1 {
@@ -38,76 +46,68 @@
     margin: 0;
     max-width: 1150px;
     font-size: 14px;
-    color: #555;
+    color: var(--text-secondary);
     line-height: 1.45;
   }
 
-  /* ===== MAIN CONTAINER ===== */
+  /* ===== MAIN LAYOUT ===== */
   #container {
     display: flex;
     height: calc(100vh - 90px);
     width: 100%;
   }
 
-  /* ===== SIDEBAR CARDS ===== */
   #sidebar-left,
   #sidebar-right {
     width: 25%;
     overflow-y: auto;
     padding: 18px;
-    background: #ffffff;
-    border-right: 1px solid #e2e4e8;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
     font-size: 14px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-
   }
 
   #sidebar-right {
     border-right: none;
-    border-left: 1px solid #e2e4e8;
+    border-left: 1px solid var(--border);
   }
 
-  /* card-like typography */
   #sidebar-left h2,
   #sidebar-right h2 {
     margin-top: 0;
     font-size: 17px;
     font-weight: 600;
-    color: #111;
-    
   }
 
   .hint {
     font-size: 12.5px;
-    color: #6b7280;
+    color: var(--text-secondary);
     margin-bottom: 12px;
     line-height: 1.35;
   }
 
-  /* ===== BUCKETS / FACTORS ===== */
-  .bucket {
-    margin-bottom: 16px;
-  }
+  /* ===== FACTORS ===== */
+  .bucket { margin-bottom: 16px; }
 
   .bucket h3 {
     margin: 14px 0 8px;
     font-size: 15px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-primary);
   }
 
   .factor {
     padding: 5px 0;
     cursor: pointer;
     font-size: 14px;
-    color: #3a3a3a;
+    color: var(--text-secondary);
     border-radius: 4px;
     transition: all 0.15s ease;
   }
 
   .factor:hover {
-    background: #eef2ff;
-    color: #1e40af;
+    background: var(--factor-hover-bg);
+    color: var(--accent-hover);
     padding-left: 4px;
   }
 
@@ -115,7 +115,7 @@
   #map {
     flex: 1;
     height: 100%;
-    background: #e5e7eb;
+    background: var(--bg-main);
   }
 
   /* ===== RIGHT DETAILS ===== */
@@ -130,10 +130,9 @@
     margin-top: 4px;
   }
 
-  b {
-    font-weight: 600;
-  }
+  b { font-weight: 600; }
 </style>
+
 
 </head>
 <body>
@@ -207,5 +206,6 @@
 
 </body>
 </html>
+
 
 

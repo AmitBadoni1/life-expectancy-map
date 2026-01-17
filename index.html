@@ -7,88 +7,134 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    /* HEADER */
-    #page-header {
-      width: 100vw;
-      padding: 16px 24px;
-      background: #ffffff;
-      border-bottom: 1px solid #ddd;
-    }
+  * {
+    box-sizing: border-box;
+  }
 
-    #page-header h1 {
-      margin: 0 0 6px;
-      font-size: 22px;
-      font-weight: 700;
-    }
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #f7f8fa;
+    color: #222;
+  }
 
-    #page-header p {
-      margin: 0;
-      font-size: 14px;
-      color: #333;
-      line-height: 1.4;
-      max-width: 1100px;
-    }
+  /* ===== HEADER ===== */
+  #page-header {
+    width: 100%;
+    padding: 18px 28px;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e4e8;
+  }
 
-    /* MAIN CONTAINER (MAP + SIDEBARS) */
-    #container {
-      display: flex;
-      width: 100vw;
-      height: calc(100vh - 90px); /* leave room for header */
-    }
+  #page-header h1 {
+    margin: 0 0 6px;
+    font-size: 22px;
+    font-weight: 600;
+  }
 
-    #sidebar-left,
-    #sidebar-right {
-      width: 25%;
-      overflow-y: auto;
-      padding: 14px;
-      background: #fafafa;
-      border-right: 1px solid #ddd;
-      font-size: 14px;
-    }
+  #page-header p {
+    margin: 0;
+    max-width: 1150px;
+    font-size: 14px;
+    color: #555;
+    line-height: 1.45;
+  }
 
-    #sidebar-right {
-      border-right: none;
-      border-left: 1px solid #ddd;
-    }
+  /* ===== MAIN CONTAINER ===== */
+  #container {
+    display: flex;
+    height: calc(100vh - 90px);
+    width: 100%;
+  }
 
-    #map {
-      flex: 1;
-      height: 100%;
-    }
+  /* ===== SIDEBAR CARDS ===== */
+  #sidebar-left,
+  #sidebar-right {
+    width: 25%;
+    overflow-y: auto;
+    padding: 18px;
+    background: #ffffff;
+    border-right: 1px solid #e2e4e8;
+    font-size: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 
-    h2 {
-      margin-top: 0;
-      margin-bottom: 8px;
-      font-size: 18px;
-      font-weight: 700;
-    }
+  }
 
-    .bucket h3 {
-      margin: 12px 0 6px;
-      font-size: 15px;
-      font-weight: 600;
-    }
+  #sidebar-right {
+    border-right: none;
+    border-left: 1px solid #e2e4e8;
+  }
 
-    .factor {
-      padding: 4px 0;
-      cursor: pointer;
-      line-height: 1.3;
-    }
+  /* card-like typography */
+  #sidebar-left h2,
+  #sidebar-right h2 {
+    margin-top: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: #111;
+    
+  }
 
-    .factor:hover {
-      text-decoration: underline;
-      font-weight: 600;
-    }
+  .hint {
+    font-size: 12.5px;
+    color: #6b7280;
+    margin-bottom: 12px;
+    line-height: 1.35;
+  }
 
-    .hint {
-      font-size: 13px;
-      color: #555;
-      margin-bottom: 10px;
-    }
-  </style>
+  /* ===== BUCKETS / FACTORS ===== */
+  .bucket {
+    margin-bottom: 16px;
+  }
+
+  .bucket h3 {
+    margin: 14px 0 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .factor {
+    padding: 5px 0;
+    cursor: pointer;
+    font-size: 14px;
+    color: #3a3a3a;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+  }
+
+  .factor:hover {
+    background: #eef2ff;
+    color: #1e40af;
+    padding-left: 4px;
+  }
+
+  /* ===== MAP ===== */
+  #map {
+    flex: 1;
+    height: 100%;
+    background: #e5e7eb;
+  }
+
+  /* ===== RIGHT DETAILS ===== */
+  #county-details {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  #county-details ol {
+    padding-left: 20px;
+    margin-top: 4px;
+  }
+
+  b {
+    font-weight: 600;
+  }
+</style>
+
 </head>
 <body>
 
@@ -161,4 +207,5 @@
 
 </body>
 </html>
+
 
